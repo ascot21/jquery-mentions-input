@@ -25,11 +25,14 @@
         defaultValue   : '',
         onCaret        : false,
         positionList   : 'bottom',
+        headerText     : '',
+        fullWidth      : false, //List is full width of text area
         classes        : {
             autoCompleteItemActive : "active" //Classes to apply in each item
         },
         templates     : {
             wrapper                    : _.template('<div class="mentions-input-box"></div>'),
+            autocompleteHeader         : _.template('<span class="mentions-list-header"><%= headerText %></span>'),
             autocompleteList           : _.template('<div class="mentions-autocomplete-list"></div>'),
             autocompleteListItem       : _.template('<li data-ref-id="<%= id %>" data-ref-type="<%= type %>" data-display="<%= display %>"><span class="mentions-list-item-content"><%= content %></span></li>'),
             autocompleteListItemAvatar : _.template('<img src="<%= avatar %>" />'),
@@ -133,6 +136,10 @@
             elmAutocompleteList = $(settings.templates.autocompleteList()); //Get the HTML code for the list
             elmAutocompleteList.appendTo(elmWrapperBox); //Append to elmWrapperBox element
             elmAutocompleteList.delegate('li', 'mousedown', onAutoCompleteItemClick); //Delegate the event
+            if (settings.headerText) {
+                elmAutocompleteHeader = $(settings.templates.autocompleteHeader({headerText: settings.headerText})); //Get the HTML code for the list
+                elmAutocompleteHeader.appendTo(elmAutocompleteList); //Append to elmAutocompleteList element
+            }
         }
 
         //Initializes the mentions' overlay
@@ -395,7 +402,8 @@
         //Hides the autoomplete
         function hideAutoComplete() {
             elmActiveAutoCompleteItem = null;
-            elmAutocompleteList.empty().hide();
+            elmAutocompleteList.find('ul').remove().hide();
+            elmAutocompleteList.hide();
         }
 
         //Selects the item in the autocomplete list
@@ -423,7 +431,7 @@
                 return;
             }
 
-            elmAutocompleteList.empty(); //Remove all li elements in autocomplete list
+            elmAutocompleteList.find('ul').remove(); //Remove all li elements in autocomplete list
             var elmDropDownList = $("<ul>").appendTo(elmAutocompleteList).hide(); //Inserts a ul element to autocomplete div and hide it
 
             _.each(results, function (item, index) {
@@ -494,20 +502,31 @@
             if (elmAutocompleteListPosition == 'absolute') {
                 var position = textareaSelectionPosition(elmInputBox),
                     lineHeight = parseInt(elmInputBox.css('line-height'), 10) || 18;
-                elmAutocompleteList.css('width', '15em'); // Sort of a guess
-                elmAutocompleteList.css('left', position.left);
-                if (settings.positionList == 'top') {
-                    elmAutocompleteList.css('bottom', lineHeight + (elmInputBox.height() - position.top));
+                if (settings.fullWidth) {
+                    elmAutocompleteList.css('width', '100%');
+                    elmAutocompleteList.css('left', '0');
                 } else {
-                    elmAutocompleteList.css('top', lineHeight + position.top);
+                    elmAutocompleteList.css('width', '15em'); // Sort of a guess
+                    elmAutocompleteList.css('left', position.left);
+                }
+                if (settings.fullWidth) {
+                    elmAutocompleteList.css('bottom', elmInputBox.outerHeight());
+                } else {
+                    if (settings.positionList == 'top') {
+                        elmAutocompleteList.css('bottom', lineHeight + (elmInputBox.height() - position.top));
+                    } else {
+                        elmAutocompleteList.css('top', lineHeight + position.top);
+                    }
                 }
 
                 //check if the right position of auto complete is larger than the right position of the input
                 //if yes, reset the left of auto complete list to make it fit the input
-                var elmInputBoxRight = elmInputBox.offset().left + elmInputBox.width(),
-                    elmAutocompleteListRight = elmAutocompleteList.offset().left + elmAutocompleteList.width();
-                if (elmInputBoxRight <= elmAutocompleteListRight) {
-                    elmAutocompleteList.css('left', Math.abs(elmAutocompleteList.position().left - (elmAutocompleteListRight - elmInputBoxRight)));
+                if (!settings.fullWidth) {
+                    var elmInputBoxRight = elmInputBox.offset().left + elmInputBox.width(),
+                        elmAutocompleteListRight = elmAutocompleteList.offset().left + elmAutocompleteList.width();
+                    if (elmInputBoxRight <= elmAutocompleteListRight) {
+                        elmAutocompleteList.css('left', Math.abs(elmAutocompleteList.position().left - (elmAutocompleteListRight - elmInputBoxRight)));
+                    }
                 }
             }
             else if (elmAutocompleteListPosition == 'fixed') {
